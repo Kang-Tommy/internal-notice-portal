@@ -6,7 +6,7 @@ window.APP_CONFIG = {
   API_BASE: 'https://noticeapi.patient-resonance-4523.workers.dev',
 
   // 顶部展示信息
-  ORG_NAME: '示例科技有限公司',
+  ORG_NAME: 'TQ科技有限公司',
   SYSTEM_NAME: '内部信息发布平台',
   FOOTER_TEXT: '本平台内容仅限内部查阅，禁止以任何形式外传、复制、截图或录屏。',
 
