@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<meta name="referrer" content="no-referrer" />
+<title>管理后台</title>
+<link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="org">
+      <span class="org-mark">管</span>
+      <span data-org>内部平台</span>
+      <span style="color:#5b6b82;font-weight:400">/</span>
+      <span style="font-weight:500;color:#c4d0e2">管理后台</span>
+    </div>
+    <nav class="crumbs">
+      <a href="./index.html">返回公告</a>
+      <a href="#" id="logout">退出</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 登录 -->
+  <section class="panel" id="loginPanel">
+    <div class="panel-head"><h2>管理员登录</h2></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="adminToken">管理员密钥（ADMIN_TOKEN）</label>
+        <input id="adminToken" type="password" autocomplete="off" required />
+        <div class="desc">密钥只保存在当前浏览器会话（sessionStorage），关闭页面后清除。请勿在公共电脑登录。</div>
+      </div>
+      <button class="btn" type="submit">进入后台</button>
+    </form>
+    <div id="loginMsg"></div>
+  </section>
+
+  <!-- 后台主体 -->
+  <div id="console" hidden>
+    <div class="toolbar">
+      <button class="btn ghost tab-btn" data-tab="notice">公告管理</button>
+      <button class="btn ghost tab-btn" data-tab="burn">阅后即焚</button>
+      <button class="btn ghost tab-btn" data-tab="card">卡密管理</button>
+    </div>
+
+    <!-- 公告管理 -->
+    <section class="panel" data-pane="notice">
+      <div class="panel-head"><h2>发布 / 管理公告</h2></div>
+      <form id="noticeForm">
+        <div class="row">
+          <div class="field" style="flex:2 1 320px">
+            <label>标题</label>
+            <input id="n-title" type="text" maxlength="120" required />
+          </div>
+          <div class="field">
+            <label>标签</label>
+            <input id="n-tag" type="text" maxlength="16" placeholder="通知 / 制度 / 活动" />
+          </div>
+          <div class="field">
+            <label>作者（可选）</label>
+            <input id="n-author" type="text" maxlength="40" />
+          </div>
+        </div>
+        <div class="field">
+          <label>正文</label>
+          <textarea id="n-body" required></textarea>
+        </div>
+        <label class="checkline"><input type="checkbox" id="n-pinned" /> 置顶展示</label>
+        <p style="margin-top:14px"><button class="btn" type="submit">发布公告</button></p>
+      </form>
+      <div id="noticeMsg"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:22px 0" />
+      <div class="panel-head"><h2>已有公告</h2><span class="hint" id="noticeCount"></span></div>
+      <div id="noticeList"></div>
+    </section>
+
+    <!-- 阅后即焚 -->
+    <section class="panel" data-pane="burn" hidden>
+      <div class="panel-head"><h2>生成阅后即焚通知</h2></div>
+      <form id="burnForm">
+        <div class="row">
+          <div class="field" style="flex:2 1 320px">
+            <label>标题</label>
+            <input id="b-title" type="text" maxlength="120" required />
+          </div>
+          <div class="field">
+            <label>密级</label>
+            <select id="b-level">
+              <option>内部机密</option>
+              <option>绝密</option>
+              <option>人事敏感</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>链接有效期（小时）</label>
+            <input id="b-ttl" type="number" min="1" max="720" value="24" />
+          </div>
+        </div>
+        <div class="field">
+          <label>正文</label>
+          <textarea id="b-body" required></textarea>
+        </div>
+        <button class="btn btn-danger-solid" type="submit">生成一次性链接</button>
+      </form>
+      <div id="burnResult" class="result-box" hidden></div>
+    </section>
+
+    <!-- 卡密管理 -->
+    <section class="panel" data-pane="card" hidden>
+      <div class="panel-head"><h2>生成卡密</h2></div>
+      <form id="cardForm">
+        <div class="row">
+          <div class="field" style="flex:2 1 320px">
+            <label>资料名称（发给谁 / 什么资料）</label>
+            <input id="c-name" type="text" maxlength="60" required />
+          </div>
+          <div class="field">
+            <label>类型</label>
+            <select id="c-kind">
+              <option value="text">文本内容</option>
+              <option value="url">外部链接</option>
+              <option value="file">R2 文件</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" data-kind="text">
+          <label>文本内容</label>
+          <textarea id="c-content" placeholder="核验通过后展示给用户的文本"></textarea>
+        </div>
+        <div class="field" data-kind="url" hidden>
+          <label>文件 / 资料链接</label>
+          <input id="c-url" type="text" placeholder="https://…" />
+        </div>
+        <div class="row" data-kind="file" hidden>
+          <div class="field">
+            <label>R2 对象键（assetKey）</label>
+            <input id="c-assetKey" type="text" placeholder="reports/2026/xxx.pdf" />
+          </div>
+          <div class="field">
+            <label>下载文件名</label>
+            <input id="c-filename" type="text" placeholder="资料.pdf" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>可用次数</label>
+            <input id="c-maxUses" type="number" min="1" max="999" value="1" />
+          </div>
+          <div class="field">
+            <label>过期时间（可选）</label>
+            <input id="c-expires" type="datetime-local" />
+          </div>
+        </div>
+        <div class="field">
+          <label>备注（仅后台可见）</label>
+          <input id="c-note" type="text" maxlength="200" />
+        </div>
+        <button class="btn" type="submit">生成卡密</button>
+      </form>
+      <div id="cardResult" class="result-box" hidden></div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:22px 0" />
+      <div class="panel-head"><h2>卡密列表</h2><span class="hint" id="cardCount"></span></div>
+      <div id="cardList"></div>
+    </section>
+  </div>
+
+  <footer><div data-footer></div></footer>
+</main>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  let token = sessionStorage.getItem('admin_token') || '';
+
+  function authHeaders() { return { token }; }
+
+  /* ---------- 登录 ---------- */
+  async function tryLogin(t) {
+    await App.api('/api/admin/cards', { token: t }); // 401 即密钥错误
+  }
+
+  async function boot() {
+    if (!token) return;
+    try {
+      await tryLogin(token);
+      enterConsole();
+    } catch (e) {
+      sessionStorage.removeItem('admin_token');
+      token = '';
+    }
+  }
+
+  function enterConsole() {
+    $('loginPanel').hidden = true;
+    $('console').hidden = false;
+    loadNotices();
+    loadCards();
+  }
+
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const t = $('adminToken').value.trim();
+    try {
+      await tryLogin(t);
+      token = t;
+      sessionStorage.setItem('admin_token', t);
+      enterConsole();
+    } catch (err) {
+      $('loginMsg').innerHTML = '<div class="alert danger">' + App.esc(err.message) + '</div>';
+    }
+  });
+
+  $('logout').addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.removeItem('admin_token');
+    location.reload();
+  });
+
+  /* ---------- Tab 切换 ---------- */
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('ghost'));
+      btn.classList.add('ghost');
+      document.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.tab !== btn.dataset.tab; });
+    });
+  });
+
+  /* ---------- 公告 ---------- */
+  async function loadNotices() {
+    try {
+      const res = await App.api('/api/notices');
+      const items = res.data || [];
+      $('noticeCount').textContent = '共 ' + items.length + ' 条';
+      $('noticeList').innerHTML = items.map((n) =>
+        '<div class="notice" style="cursor:default">'
+        + '<div class="notice-top">'
+        + (n.pinned ? '<span class="badge pin">置顶</span>' : '')
+        + (n.tag ? '<span class="badge tag">' + App.esc(n.tag) + '</span>' : '')
+        + '<h3 class="notice-title">' + App.esc(n.title) + '</h3>'
+        + '<button class="btn danger sm" data-del="' + App.esc(n.id) + '" style="margin-left:auto">删除</button>'
+        + '</div>'
+        + '<div class="notice-meta"><span>' + App.fmtDate(n.createdAt, true) + '</span></div>'
+        + '</div>'
+      ).join('') || '<div class="alert info">暂无公告。</div>';
+
+      $('noticeList').querySelectorAll('[data-del]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          if (!confirm('确认删除该公告？')) return;
+          await App.api('/api/admin/notices/' + b.dataset.del, { method: 'DELETE', token });
+          loadNotices();
+        });
+      });
+    } catch (e) {
+      $('noticeList').innerHTML = '<div class="alert danger">' + App.esc(e.message) + '</div>';
+    }
+  }
+
+  $('noticeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await App.api('/api/admin/notices', {
+        method: 'POST', token,
+        body: {
+          title: $('n-title').value,
+          body: $('n-body').value,
+          tag: $('n-tag').value,
+          author: $('n-author').value,
+          pinned: $('n-pinned').checked,
+        },
+      });
+      $('noticeMsg').innerHTML = '<div class="alert ok">公告已发布。</div>';
+      e.target.reset();
+      loadNotices();
+    } catch (err) {
+      $('noticeMsg').innerHTML = '<div class="alert danger">' + App.esc(err.message) + '</div>';
+    }
+  });
+
+  /* ---------- 阅后即焚 ---------- */
+  $('burnForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const res = await App.api('/api/admin/burn', {
+        method: 'POST', token,
+        body: {
+          title: $('b-title').value,
+          body: $('b-body').value,
+          level: $('b-level').value,
+          ttlHours: Number($('b-ttl').value) || 24,
+        },
+      });
+      const d = res.data;
+      $('burnResult').hidden = false;
+      $('burnResult').innerHTML =
+        '<div class="alert ok">一次性链接已生成，链接仅在有效期内可打开，被查阅后立即销毁。</div>'
+        + '<div class="field"><label>查阅链接</label>'
+        + '<input class="mono" id="burnLink" type="text" readonly value="' + App.esc(d.link) + '" /></div>'
+        + '<button class="btn ghost sm" id="copyBurn">复制链接</button>'
+        + '<div class="desc">过期时间：' + App.fmtDate(d.expireAt, true) + '</div>';
+      $('copyBurn').addEventListener('click', () => {
+        navigator.clipboard.writeText($('burnLink').value).then(() => {
+          $('copyBurn').textContent = '已复制';
+        });
+      });
+      e.target.reset();
+    } catch (err) {
+      $('burnResult').hidden = false;
+      $('burnResult').innerHTML = '<div class="alert danger">' + App.esc(err.message) + '</div>';
+    }
+  });
+
+  /* ---------- 卡密 ---------- */
+  document.querySelectorAll('#c-kind').forEach((sel) => {
+    sel.addEventListener('change', () => {
+      const kind = sel.value;
+      document.querySelectorAll('[data-kind]').forEach((f) => { f.hidden = f.dataset.kind !== kind; });
+    });
+  });
+
+  $('cardForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const kind = $('c-kind').value;
+    const body = {
+      name: $('c-name').value,
+      kind,
+      maxUses: Number($('c-maxUses').value) || 1,
+      expiresAt: $('c-expires').value || null,
+      note: $('c-note').value,
+    };
+    if (kind === 'text') body.content = $('c-content').value;
+    if (kind === 'url') body.url = $('c-url').value;
+    if (kind === 'file') {
+      body.assetKey = $('c-assetKey').value;
+      body.filename = $('c-filename').value;
+    }
+    try {
+      const res = await App.api('/api/admin/cards', { method: 'POST', token, body });
+      const d = res.data;
+      $('cardResult').hidden = false;
+      $('cardResult').innerHTML =
+        '<div class="alert ok">卡密已生成，请立即复制并线下发放（后台不回显完整卡密）。</div>'
+        + '<div class="field"><label>卡密</label>'
+        + '<input class="mono" id="cardCode" type="text" readonly value="' + App.esc(d.code) + '" /></div>'
+        + '<button class="btn ghost sm" id="copyCard">复制卡密</button>'
+        + '<div class="desc">类型：' + App.esc(d.kind) + '　｜　可用次数：' + d.maxUses
+        + (d.expiresAt ? '　｜　有效期至：' + App.fmtDate(d.expiresAt, true) : '') + '</div>';
+      $('copyCard').addEventListener('click', () => {
+        navigator.clipboard.writeText($('cardCode').value).then(() => { $('copyCard').textContent = '已复制'; });
+      });
+      e.target.reset();
+      loadCards();
+    } catch (err) {
+      $('cardResult').hidden = false;
+      $('cardResult').innerHTML = '<div class="alert danger">' + App.esc(err.message) + '</div>';
+    }
+  });
+
+  async function loadCards() {
+    try {
+      const res = await App.api('/api/admin/cards', { token });
+      const items = res.data || [];
+      $('cardCount').textContent = '共 ' + items.length + ' 张';
+      $('cardList').innerHTML = items.map((c) => {
+        const status = c.revoked
+          ? '<span class="badge no">已停用</span>'
+          : c.expiresAt && new Date(c.expiresAt) < new Date()
+            ? '<span class="badge no">已过期</span>'
+            : c.uses >= c.maxUses
+              ? '<span class="badge no">已用完</span>'
+              : '<span class="badge ok">有效</span>';
+        return '<div class="notice" style="cursor:default">'
+          + '<div class="notice-top">'
+          + status
+          + '<span class="badge tag">' + App.esc(c.kind) + '</span>'
+          + '<h3 class="notice-title">' + App.esc(c.name || '（未命名）') + '</h3>'
+          + '<button class="btn danger sm" data-hash="' + App.esc(c.hash) + '" style="margin-left:auto">停用</button>'
+          + '</div>'
+          + '<div class="notice-meta">'
+          + '<span>hash：' + App.esc(c.hash) + '…</span>'
+          + '<span>使用：' + c.uses + '/' + c.maxUses + '</span>'
+          + '<span>生成：' + App.fmtDate(c.createdAt, true) + '</span>'
+          + (c.expiresAt ? '<span>过期：' + App.fmtDate(c.expiresAt) + '</span>' : '')
+          + '</div>'
+          + (c.note ? '<div class="notice-body" style="display:block">备注：' + App.esc(c.note) + '</div>' : '')
+          + '</div>';
+      }).join('') || '<div class="alert info">暂无卡密。</div>';
+
+      $('cardList').querySelectorAll('[data-hash]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          if (!confirm('确认停用这张卡密？停用后不可再用。')) return;
+          await App.api('/api/admin/cards/revoke-by-hash', { method: 'POST', token, body: { hashPrefix: b.dataset.hash } });
+          loadCards();
+        });
+      });
+    } catch (e) {
+      $('cardList').innerHTML = '<div class="alert danger">' + App.esc(e.message) + '</div>';
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
