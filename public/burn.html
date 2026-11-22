@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<meta name="referrer" content="no-referrer" />
+<title>涉密通知 · 阅后即焚</title>
+<link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body class="burnpage">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="org">
+      <span class="org-mark">密</span>
+      <span data-org>内部平台</span>
+      <span style="color:#5b6b82;font-weight:400">/</span>
+      <span style="font-weight:500;color:#c4d0e2">阅后即焚</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 闸门：确认后才向服务端请求内容 -->
+  <section class="gate" id="gate">
+    <div class="seal">🔥</div>
+    <h2>涉密通知 · 一次性查阅</h2>
+    <p>本通知属于内部机密，仅允许指定人员查阅。内容在你打开后将从服务器永久删除，不可再次查看。</p>
+    <div class="rules">
+      <b>查阅规则：</b><br />
+      1. 本页面已开启防截屏、防录屏、防复制保护；<br />
+      2. 检测到截图、录屏、切窗、开发者工具等行为，页面将立即黑屏锁定；<br />
+      3. 请在安静、可专注阅读的环境下查看，不要切换到其它窗口；<br />
+      4. 禁止以任何方式记录、转述或外传本通知内容。
+    </div>
+    <button class="btn btn-danger-solid" id="openBtn">我已确认，开始查看</button>
+    <div class="countdown" id="gate-tip">链接仅在有效期内可打开，过期或已查阅将自动失效。</div>
+  </section>
+
+  <!-- 已加载的涉密正文 -->
+  <section class="burn-doc" id="doc" hidden>
+    <span class="level" id="level">内部机密</span>
+    <h1 data-sensitive id="title"></h1>
+    <div class="meta" id="meta"></div>
+    <div class="body" data-sensitive id="body"></div>
+    <div class="countdown" id="burn-countdown"></div>
+  </section>
+
+  <!-- 异常 / 失效提示 -->
+  <section class="panel" id="fail" hidden>
+    <div class="alert danger" id="fail-msg"></div>
+    <a class="btn ghost" href="./index.html">返回公告首页</a>
+  </section>
+
+</main>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/app.js"></script>
+<script src="./assets/guard.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const cfg = App.CFG.BURN || {};
+  const gate = document.getElementById('gate');
+  const doc = document.getElementById('doc');
+  const fail = document.getElementById('fail');
+  const failMsg = document.getElementById('fail-msg');
+
+  // token 只放在 URL 哈希里，不会随请求发送给服务端，也不会出现在 Referer 中
+  function readToken() {
+    const h = location.hash || '';
+    if (!h) return '';
+    const m = h.match(/[#&]t=([a-f0-9]{16,64})/i);
+    return m ? m[1] : h.replace(/^#/, '');
+  }
+
+  function showFail(msg) {
+    gate.hidden = true;
+    doc.hidden = true;
+    fail.hidden = false;
+    failMsg.textContent = msg;
+  }
+
+  const token = readToken();
+  if (!token) {
+    showFail('链接参数无效。请使用信息发布人提供的完整链接打开本页面。');
+    return;
+  }
+
+  let opened = false;
+
+  async function openDoc() {
+    if (opened) return;
+    opened = true;
+    const btn = document.getElementById('openBtn');
+    btn.disabled = true;
+    btn.textContent = '正在解密…';
+
+    // 风控先启动，再请求内容，避免内容先渲染后被截
+    BurnGuard.start({
+      blackOnBlur: cfg.blackOnBlur !== false,
+      autoCloseSeconds: cfg.autoCloseSeconds || 0,
+      watermark: cfg.watermark || '',
+      reportBreach: cfg.reportBreach !== false,
+      reportUrl: App.API + '/api/report',
+      token: token,
+      onBreach: function () {
+        // 触发风控后不再保留任何 DOM 文本
+        doc.hidden = true;
+      },
+    });
+
+    try {
+      const res = await App.api('/api/burn', { method: 'POST', body: { token } });
+      const d = res.data || {};
+
+      // 清掉地址栏里的 token，避免被截图 / 历史记录留存
+      try { history.replaceState(null, '', location.pathname); } catch (_) {}
+
+      gate.hidden = true;
+      doc.hidden = false;
+      document.getElementById('level').textContent = d.level || '内部机密';
+      document.getElementById('title').textContent = d.title || '涉密通知';
+      document.getElementById('meta').textContent = '发布时间：' + App.fmtDate(d.createdAt, true);
+      document.getElementById('body').textContent = d.body || '（无正文）';
+      document.title = '涉密通知';
+    } catch (e) {
+      // 查阅失败（链接失效 / 已销毁 / 网络异常）：先解除风控，再展示提示
+      BurnGuard.stop();
+      showFail(e.message || '内容不存在或已被销毁。');
+    }
+  }
+
+  document.getElementById('openBtn').addEventListener('click', openDoc);
+})();
+</script>
+</body>
+</html>
