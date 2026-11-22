@@ -3,7 +3,7 @@
  * 部署 Worker 后，把 API_BASE 换成你的 Worker 地址（自定义域名或 xxx.workers.dev）。
  */
 window.APP_CONFIG = {
-  API_BASE: 'https://api.pb.tongqu.eu.org',
+  API_BASE: 'noticeapi.patient-resonance-4523.workers.dev',
 
   // 顶部展示信息
   ORG_NAME: '示例科技有限公司',
