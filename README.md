@@ -1,4 +1,4 @@
-# 企业内部信息发布系统
+# 企业内部信息发布平台
 
 基于 **GitHub Pages + Cloudflare Workers + Workers KV** 的零服务器内部发布系统，包含三个模块：
 
