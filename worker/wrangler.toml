@@ -1,0 +1,25 @@
+name = "notice-portal-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# 变量：wrangler.toml 里只放非敏感信息，密钥请用 wrangler secret put
+[vars]
+# 前端站点地址，用于生成阅后即焚链接（部署 Pages 后填自己的域名）
+PAGES_URL = "https://your-org.github.io/internal-notice-portal"
+# 允许调用 API 的前端来源，多个用逗号分隔；本地调试可填 http://localhost:8080
+ALLOWED_ORIGINS = "http://localhost:8080"
+# 卡密爆破限流开关
+RATE_LIMIT = "on"
+
+# KV 命名空间：先执行
+#   wrangler kv namespace create KV
+# 再把返回的 id 填到下面
+[[kv_namespaces]]
+binding = "KV"
+id = "请替换为你的KV命名空间ID"
+
+# 可选：卡密分发文件时，把文件放 R2 桶并绑定
+# [[r2_buckets]]
+# binding = "FILES"
+# bucket_name = "notice-portal-files"

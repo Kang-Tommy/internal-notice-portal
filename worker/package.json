@@ -1,0 +1,15 @@
+{
+  "name": "notice-portal-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "企业内部信息发布系统后端（Cloudflare Worker）",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "kv:create": "wrangler kv namespace create KV"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
