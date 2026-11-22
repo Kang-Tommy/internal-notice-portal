@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<meta name="referrer" content="no-referrer" />
+<title>内部信息发布平台</title>
+<link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="org">
+      <span class="org-mark">内</span>
+      <span data-org>内部平台</span>
+      <span style="color:#5b6b82;font-weight:400">/</span>
+      <span style="font-weight:500;color:#c4d0e2" data-system>内部信息发布平台</span>
+    </div>
+    <nav class="crumbs">
+      <a href="./file.html">卡密取文件</a>
+      <a href="./admin.html">管理入口</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>内部公告</h1>
+    <p>本页仅用于内部通知发布。涉密内容不在此处展示，请通过指定链接或卡密访问。</p>
+  </section>
+
+  <div class="toolbar">
+    <div class="search">
+      <span style="color:#94a3b8">🔍</span>
+      <input id="q" type="text" placeholder="搜索公告标题或正文…" autocomplete="off" />
+    </div>
+    <button class="btn ghost" id="refresh">刷新</button>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>公告列表</h2>
+      <span class="hint" id="count"></span>
+    </div>
+    <div class="notice-list" id="list">
+      <div class="alert info">正在加载公告…</div>
+    </div>
+  </section>
+
+  <div class="alert warn">
+    <b>保密提醒：</b>平台内的公告仅限内部查阅。涉及人事、财务、客户信息的内容，请勿转发至外部群聊、社交平台，勿截图、勿录屏。
+  </div>
+
+  <footer>
+    <div data-footer></div>
+    <div style="margin-top:6px">页面加载时间：<span id="ts"></span></div>
+  </footer>
+</main>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const listEl = document.getElementById('list');
+  const countEl = document.getElementById('count');
+  const qEl = document.getElementById('q');
+  let all = [];
+
+  document.getElementById('ts').textContent = new Date().toLocaleString('zh-CN', { hour12: false });
+
+  function render(items) {
+    if (!items.length) {
+      listEl.innerHTML = '<div class="alert info">暂无公告。</div>';
+      return;
+    }
+    listEl.innerHTML = items.map(function (n) {
+      const tag = n.tag ? '<span class="badge tag">' + App.esc(n.tag) + '</span>' : '';
+      const pin = n.pinned ? '<span class="badge pin">置顶</span>' : '';
+      return '<article class="notice" data-id="' + App.esc(n.id) + '">'
+        + '<div class="notice-top">'
+        + pin + tag
+        + '<h3 class="notice-title">' + App.esc(n.title) + '</h3>'
+        + '</div>'
+        + '<div class="notice-meta">'
+        + '<span>' + App.fmtDate(n.createdAt) + '</span>'
+        + (n.author ? '<span>' + App.esc(n.author) + '</span>' : '')
+        + '</div>'
+        + '<div class="notice-body">' + App.esc(n.body || '（无正文）') + '</div>'
+        + '</article>';
+    }).join('');
+
+    listEl.querySelectorAll('.notice').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const open = el.getAttribute('data-open') === '1';
+        el.setAttribute('data-open', open ? '0' : '1');
+      });
+    });
+  }
+
+  function applyFilter() {
+    const kw = qEl.value.trim().toLowerCase();
+    const filtered = kw
+      ? all.filter(function (n) {
+          return (n.title + ' ' + (n.body || '') + ' ' + (n.tag || '')).toLowerCase().indexOf(kw) >= 0;
+        })
+      : all;
+    countEl.textContent = kw ? '匹配 ' + filtered.length + ' 条 / 共 ' + all.length + ' 条' : '共 ' + all.length + ' 条';
+    render(filtered);
+  }
+
+  async function load() {
+    listEl.innerHTML = '<div class="alert info">正在加载公告…</div>';
+    try {
+      const res = await App.api('/api/notices');
+      all = res.data || [];
+      applyFilter();
+    } catch (e) {
+      listEl.innerHTML = '<div class="alert danger">加载失败：' + App.esc(e.message)
+        + '<br><span style="font-size:12px;color:#8a1c13">请确认 assets/config.js 中的 API_BASE 已指向部署好的 Worker。</span></div>';
+    }
+  }
+
+  qEl.addEventListener('input', applyFilter);
+  document.getElementById('refresh').addEventListener('click', load);
+  load();
+})();
+</script>
+</body>
+</html>

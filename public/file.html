@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<meta name="referrer" content="no-referrer" />
+<title>卡密取文件</title>
+<link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="org">
+      <span class="org-mark">钥</span>
+      <span data-org>内部平台</span>
+      <span style="color:#5b6b82;font-weight:400">/</span>
+      <span style="font-weight:500;color:#c4d0e2">卡密取文件</span>
+    </div>
+    <nav class="crumbs">
+      <a href="./index.html">返回公告</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>卡密取文件</h1>
+    <p>请输入信息发布人发放的专属卡密，核验通过后获取对应资料。卡密可能仅限单次使用，请妥善保管。</p>
+  </section>
+
+  <section class="panel">
+    <form id="form" autocomplete="off">
+      <div class="field">
+        <label for="card">卡密</label>
+        <input id="card" class="card-input" type="text" inputmode="text"
+               placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="32" spellcheck="false" required />
+        <div class="desc">不区分大小写，可忽略中间的短横线。卡密不会保存在浏览器本地。</div>
+      </div>
+      <button class="btn block" type="submit" id="submit">核验并获取</button>
+    </form>
+
+    <div class="result-box" id="result" hidden></div>
+  </section>
+
+  <div class="alert warn">
+    <b>注意：</b>文件 / 资料仅限本人在内部权限范围内使用。单次卡密核验后即作废；多次卡密也有次数与有效期限制。请勿将卡密转借给他人。
+  </div>
+
+  <footer>
+    <div data-footer></div>
+  </footer>
+</main>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const form = document.getElementById('form');
+  const cardEl = document.getElementById('card');
+  const submit = document.getElementById('submit');
+  const result = document.getElementById('result');
+
+  function show(html) { result.innerHTML = html; result.hidden = false; }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    result.hidden = true;
+    submit.disabled = true;
+    submit.textContent = '核验中…';
+    try {
+      const res = await App.api('/api/card', { method: 'POST', body: { card: cardEl.value } });
+      renderResult(res);
+    } catch (err) {
+      show('<div class="alert danger">' + App.esc(err.message) + '</div>');
+    } finally {
+      submit.disabled = false;
+      submit.textContent = '核验并获取';
+    }
+  }
+
+  function renderResult(d) {
+    let html = '<div class="alert ok">核验通过。';
+    if (d.name) html += '资料名称：<b>' + App.esc(d.name) + '</b>';
+    html += '</div>';
+
+    if (typeof d.remainingUses === 'number') {
+      html += '<div class="alert info">剩余可用次数：<b>' + d.remainingUses + '</b>'
+        + (d.expiresAt ? '　｜　有效期至：' + App.fmtDate(d.expiresAt, true) : '') + '</div>';
+    }
+    if (d.note) html += '<div class="alert warn">' + App.esc(d.note) + '</div>';
+
+    if (d.kind === 'text') {
+      html += '<div class="secret-text" data-sensitive>' + App.esc(d.content || '（空内容）') + '</div>';
+      html += '<p style="margin-top:12px"><button class="btn ghost sm" id="dlTxt">下载为 TXT</button></p>';
+    } else if (d.kind === 'url') {
+      html += '<div class="alert info">点击下方链接访问资料：</div>'
+        + '<p><a class="btn" target="_blank" rel="noopener noreferrer nofollow" href="' + App.esc(d.url) + '">'
+        + (d.filename ? '打开：' + App.esc(d.filename) : '打开资料链接') + '</a></p>';
+    } else if (d.kind === 'file' && d.download) {
+      html += '<div class="alert info">文件已就绪，请在 10 分钟内下载（链接一次性有效）：</div>'
+        + '<p><a class="btn" href="' + App.API + d.download + '" download="' + App.esc(d.filename || '') + '">'
+        + '下载文件' + (d.filename ? '：' + App.esc(d.filename) : '') + '</a></p>';
+    }
+
+    show(html);
+
+    const dl = document.getElementById('dlTxt');
+    if (dl) {
+      dl.addEventListener('click', function () {
+        const blob = new Blob([d.content || ''], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (d.name || 'notice') + '.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    }
+  }
+
+  form.addEventListener('submit', onSubmit);
+})();
+</script>
+</body>
+</html>
